@@ -1,0 +1,64 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: LMS_backend
+    command: >
+      sh -c "gunicorn LMS.asgi:application --bind 0.0.0.0:8004 --workers 4 --worker-class uvicorn.workers.UvicornWorker"
+    volumes:
+      - ./:/LMS
+      - static_volume:/LMS/static   # Declaring the named volume for static files
+    ports:
+      - "127.0.0.1:8004:8004"
+    env_file:
+      - /home/LMS-production/python/.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - LMS_network
+
+  migrate_db:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: LMS_migrate_db
+    command: sh -c "python3 manage.py makemigrations --noinput && python3 manage.py migrate && python3 manage.py createcachetable"
+    volumes:
+      - /home/LMS-production/python:/LMS
+    env_file:
+      - /home/LMS-production/python/.env
+    depends_on:
+      - backend
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: "no"
+    networks:
+      - LMS_network
+
+  migrate_setup:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: LMS_migrate_setup
+    command: sh -c "python3 manage.py createsuperuser"
+    volumes:
+      - /home/LMS-production/python:/LMS
+    env_file:
+      - /home/LMS-production/python/.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - migrate_db
+    restart: "no"
+    networks:
+      - LMS_network
+
+volumes:
+  static_volume:  # Declare the static_volume here
+  LMS_data:
+  redis_data:
+
+networks:
+  LMS_network:
+    driver: bridge
