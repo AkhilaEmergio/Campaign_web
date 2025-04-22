@@ -3,62 +3,63 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: LMS_backend
+    container_name: campaign_backend
     command: >
-      sh -c "gunicorn LMS.asgi:application --bind 0.0.0.0:8004 --workers 4 --worker-class uvicorn.workers.UvicornWorker"
+      sh -c "gunicorn campaign_web.asgi:application --bind 0.0.0.0:8005 --workers 4 --worker-class uvicorn.workers.UvicornWorker"
     volumes:
-      - ./:/LMS
-      - static_volume:/LMS/static   # Declaring the named volume for static files
+      - ./:/campaign
+      - static_volume:/campaign/static   # Declaring the named volume for static files
     ports:
-      - "127.0.0.1:8004:8004"
+      - "127.0.0.1:8005:8005"
     env_file:
-      - /home/LMS-production/python/.env
+      - /home/campaign/public_html/.env
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
-      - LMS_network
+      - campaign_network
 
   migrate_db:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: LMS_migrate_db
+    container_name: campaign_migrate_db
     command: sh -c "python3 manage.py makemigrations --noinput && python3 manage.py migrate && python3 manage.py createcachetable"
     volumes:
-      - /home/LMS-production/python:/LMS
+      - /home/campaign/public_html:/campaign
     env_file:
-      - /home/LMS-production/python/.env
+      - /home/campaign/public_html/.env
     depends_on:
       - backend
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: "no"
     networks:
-      - LMS_network
+      - campaign_network
 
   migrate_setup:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: LMS_migrate_setup
+    container_name: campaign_migrate_setup
     command: sh -c "python3 manage.py createsuperuser"
     volumes:
-      - /home/LMS-production/python:/LMS
+      - /home/campaign/public_html:/campaign
     env_file:
-      - /home/LMS-production/python/.env
+      - /home/campaign/public_html/.env
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
       - migrate_db
     restart: "no"
     networks:
-      - LMS_network
+      - campaign_network
 
 volumes:
   static_volume:  # Declare the static_volume here
-  LMS_data:
+  campaign_data:
   redis_data:
 
 networks:
-  LMS_network:
+  campaign_network:
     driver: bridge
+    

@@ -5,7 +5,7 @@ FROM python:${PYTHON_VERSION}-slim as base
 ENV PYTHONDONTWRITEBYTECODE=1 \
    PYTHONUNBUFFERED=1
 
-WORKDIR /LMS
+WORKDIR /campaign
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -24,7 +24,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 # Copy the source code into the container
 COPY . .
 # Expose the port the application listens on
-EXPOSE 8004
+EXPOSE 8005
 
 # Run the application
-CMD gunicorn LMS.asgi:application --bind 0.0.0.0:8004 --workers 4 --worker-class uvicorn.workers.UvicornWorker
+CMD gunicorn campaign_web.asgi:application --bind 0.0.0.0:8005 --workers 4 --worker-class uvicorn.workers.UvicornWorker
